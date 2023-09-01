@@ -1,14 +1,24 @@
-use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use clap::Parser;
+
+use netnyan::server;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, default_value_t = false)]
+    listen: bool,
+
+    #[arg(short, long)]
+    port: Option<u16>,
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:12345").await?;
+    let args = Args::parse();
 
-    let (mut socket, _) = listener.accept().await?;
-    loop {
-        let mut buf = vec![];
-        socket.read_buf(&mut buf).await?;
-        socket.write_all(&buf).await?;
+    if args.listen {
+        server::run(args.port).await?;
     }
+
+    Ok(())
 }
