@@ -17,7 +17,10 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     if args.listen {
-        server::run(args.port).await?;
+        tokio::select! {
+            r = tokio::signal::ctrl_c() => r?,
+            r = server::run(args.port) => r?,
+        }
     }
 
     Ok(())
