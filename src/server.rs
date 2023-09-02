@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use std::io::{stdout, Write};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{
@@ -12,25 +12,42 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     let (stdin, proxy) = broadcast::channel(1);
 
-    tokio::task::spawn_blocking(move || loop {
-        let mut buf = String::new();
-        std::io::stdin().read_line(&mut buf).unwrap();
-        stdin.send(buf).unwrap();
+    let input_handle = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
+        loop {
+            let mut buf = String::new();
+            std::io::stdin().read_line(&mut buf)?;
+            stdin.send(buf).map_err(|e| anyhow!(e))?;
+        }
     });
 
-    loop {
-        let (socket, addr) = listener.accept().await?;
-        tracing::info!("connect: {:?}", addr);
+    let server_handle = async {
+        loop {
+            let (socket, addr) = listener.accept().await?;
+            tracing::info!("connect: {:?}", addr);
 
-        let proxy = proxy.resubscribe();
-        tokio::spawn(async move {
-            let (stream, sink) = socket.into_split();
-            tokio::select! {
-                _ = tx(sink, proxy) => (),
-                _ = rx(stream) => (),
-            }
-            tracing::info!("disconnect: {:?}", addr);
-        });
+            let proxy = proxy.resubscribe();
+            tokio::spawn(async move {
+                let (stream, sink) = socket.into_split();
+                tokio::select! {
+                    _ = tx(sink, proxy) => (),
+                    _ = rx(stream) => (),
+                }
+                tracing::info!("disconnect: {:?}", addr);
+            });
+        }
+        #[allow(unreachable_code)]
+        Result::<_, anyhow::Error>::Ok(())
+    };
+
+    tokio::select! {
+        r = input_handle => {
+            tracing::debug!("input end");
+            r?
+        }
+        r = server_handle => {
+            tracing::debug!("server end");
+            r
+        }
     }
 }
 

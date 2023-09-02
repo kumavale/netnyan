@@ -20,11 +20,19 @@ pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
     });
 
     tokio::select! {
-        _ = input_handle => tracing::debug!("input end"),
-        _ = tx(sink, proxy) => tracing::debug!("tx end"),
-        _ = rx(stream) => tracing::debug!("rx end"),
+        r = input_handle => {
+            tracing::debug!("input end");
+            r?
+        }
+        r = tx(sink, proxy) => {
+            tracing::debug!("tx end");
+            r
+        }
+        r = rx(stream) => {
+            tracing::debug!("rx end");
+            r
+        }
     }
-    Ok(())
 }
 
 async fn tx(
