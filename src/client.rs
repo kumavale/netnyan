@@ -10,31 +10,28 @@ pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
     let (stream, sink) = stream.into_split();
 
     let (sender, proxy) = broadcast::channel(1);
-    let input_handle = if atty::is(atty::Stream::Stdin) {
+    if atty::is(atty::Stream::Stdin) {
         tracing::debug!("from stdin");
-        net::stdin(sender)
+        tokio::spawn(net::stdin(sender));
     } else {
         tracing::debug!("from pipe");
-        net::pipein(sender)
-    };
+        tokio::spawn(net::pipein(sender));
+    }
 
-    tokio::join!(input_handle, async {
-        tokio::select! {
-            r = net::tx(sink, proxy) => {
-                if let Err(ref e) = r {
-                    if e.downcast_ref::<RecvError>() == Some(&RecvError::Closed) {
-                        tracing::debug!("pipe end");
-                        return Ok(());
-                    }
+    tokio::select! {
+        r = net::tx(sink, proxy) => {
+            if let Err(ref e) = r {
+                if e.downcast_ref::<RecvError>() == Some(&RecvError::Closed) {
+                    tracing::debug!("pipe end");
+                    return Ok(());
                 }
-                tracing::debug!("tx end");
-                r
             }
-            r = net::rx(stream) => {
-                tracing::debug!("rx end");
-                r
-            }
+            tracing::debug!("tx end");
+            r
         }
-    })
-    .1
+        r = net::rx(stream) => {
+            tracing::debug!("rx end");
+            r
+        }
+    }
 }
