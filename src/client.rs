@@ -8,9 +8,10 @@ pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
     let port = port.context("missing port number")?;
     let stream = TcpStream::connect(format!("{destination}:{port}")).await?;
     let (stream, sink) = stream.into_split();
-    let (tx, rx) = tokio::join!(tx(sink), rx(stream));
-    tx?;
-    rx?;
+    tokio::select! {
+        _ = tokio::spawn(tx(sink)) => (),
+        _ = tokio::spawn(rx(stream)) => (),
+    }
     Ok(())
 }
 
