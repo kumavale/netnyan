@@ -1,6 +1,6 @@
 use clap::{CommandFactory, Parser};
 
-use netnyan::{client, server};
+use netnyan::{client, logger, server};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -16,11 +16,16 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    logger::init();
+
     let args = Args::parse();
 
     if args.listen {
         tokio::select! {
-            r = tokio::signal::ctrl_c() => r?,
+            _ = tokio::signal::ctrl_c() => {
+                tracing::debug!("received Ctrl+C");
+                std::process::exit(128 + 2);
+            },
             r = server::run(args.listen_port) => r?,
         }
         return Ok(());
@@ -28,7 +33,10 @@ async fn main() -> anyhow::Result<()> {
 
     if let Some(destination) = args.destination {
         tokio::select! {
-            r = tokio::signal::ctrl_c() => r?,
+            _ = tokio::signal::ctrl_c() => {
+                tracing::debug!("received Ctrl+C");
+                std::process::exit(128 + 2);
+            },
             r = client::run(destination, args.port) => r?,
         }
         return Ok(());

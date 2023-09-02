@@ -9,3 +9,5 @@ edition = "2021"
 anyhow = "1.0.75"
 clap = { version = "4.4.2", features = ["derive"] }
 tokio = { version = "1.32.0", features = ["full", "signal"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
