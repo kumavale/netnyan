@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::Write;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::sync::broadcast;
@@ -9,15 +9,6 @@ pub fn stdin(sender: broadcast::Sender<Vec<u8>>) -> JoinHandle<anyhow::Result<()
         let mut buf = String::new();
         std::io::stdin().read_line(&mut buf)?;
         sender.send(buf.into_bytes())?;
-    })
-}
-
-pub fn pipein(sender: broadcast::Sender<Vec<u8>>) -> JoinHandle<anyhow::Result<()>> {
-    tokio::task::spawn_blocking(move || {
-        let mut buf = vec![];
-        std::io::stdin().lock().read_to_end(&mut buf)?;
-        sender.send(buf)?;
-        Ok(())
     })
 }
 

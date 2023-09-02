@@ -1,6 +1,7 @@
 mod client;
 mod logger;
 mod net;
+mod pipe;
 mod server;
 
 use clap::{CommandFactory, Parser};
