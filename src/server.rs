@@ -12,7 +12,7 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
     let (stdin, proxy) = broadcast::channel(1);
 
-    std::thread::spawn(move || loop {
+    tokio::task::spawn_blocking(move || loop {
         let mut buf = String::new();
         std::io::stdin().read_line(&mut buf).unwrap();
         stdin.send(buf).unwrap();
@@ -26,8 +26,8 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
         tokio::spawn(async move {
             let (stream, sink) = socket.into_split();
             tokio::select! {
-                _ = tokio::spawn(tx(sink, proxy)) => (),
-                _ = tokio::spawn(rx(stream)) => (),
+                _ = tx(sink, proxy) => (),
+                _ = rx(stream) => (),
             }
             tracing::info!("disconnect: {:?}", addr);
         });
