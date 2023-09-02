@@ -24,7 +24,10 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
     }
 }
 
-async fn listener(listener: TcpListener, proxy: broadcast::Receiver<String>) -> anyhow::Result<()> {
+async fn listener(
+    listener: TcpListener,
+    proxy: broadcast::Receiver<Vec<u8>>,
+) -> anyhow::Result<()> {
     loop {
         let (socket, addr) = listener.accept().await?;
         tracing::info!("connect: {:?}", addr);
