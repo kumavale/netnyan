@@ -1,60 +1,29 @@
-use anyhow::{anyhow, Context};
-use std::io::{stdout, Write};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
+use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::broadcast;
+
+use crate::net;
 
 pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
     let port = port.context("missing port number")?;
     let stream = TcpStream::connect(format!("{destination}:{port}")).await?;
     let (stream, sink) = stream.into_split();
 
-    let (stdin, proxy) = broadcast::channel(1);
-    let input_handle = tokio::task::spawn_blocking(move || -> anyhow::Result<()> {
-        loop {
-            let mut buf = String::new();
-            std::io::stdin().read_line(&mut buf)?;
-            stdin.send(buf).map_err(|e| anyhow!(e))?;
-        }
-    });
+    let (sender, proxy) = broadcast::channel(1);
+    let input_handle = net::stdin(sender);
 
     tokio::select! {
         r = input_handle => {
             tracing::debug!("input end");
             r?
         }
-        r = tx(sink, proxy) => {
+        r = net::tx(sink, proxy) => {
             tracing::debug!("tx end");
             r
         }
-        r = rx(stream) => {
+        r = net::rx(stream) => {
             tracing::debug!("rx end");
             r
-        }
-    }
-}
-
-async fn tx(
-    mut sink: OwnedWriteHalf,
-    mut proxy: broadcast::Receiver<String>,
-) -> anyhow::Result<()> {
-    loop {
-        let buf = proxy.recv().await?;
-        sink.write_all(buf.as_bytes()).await?;
-    }
-}
-
-async fn rx(mut stream: OwnedReadHalf) -> anyhow::Result<()> {
-    loop {
-        let mut buf = vec![];
-        match stream.read_buf(&mut buf).await {
-            Ok(0) => return Ok(()),
-            Ok(_) => {
-                print!("{}", String::from_utf8_lossy(&buf));
-                stdout().flush()?;
-            }
-            Err(e) => anyhow::bail!(e),
         }
     }
 }
