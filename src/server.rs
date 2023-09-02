@@ -5,12 +5,12 @@ use tokio::net::{
     tcp::{OwnedReadHalf, OwnedWriteHalf},
     TcpListener,
 };
-use tokio::sync::watch;
+use tokio::sync::broadcast;
 
 pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
     let port = port.context("missing port number")?;
     let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
-    let (stdin, proxy) = watch::channel(String::new());
+    let (stdin, proxy) = broadcast::channel(1);
 
     std::thread::spawn(move || loop {
         let mut buf = String::new();
@@ -22,7 +22,7 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
         let (socket, addr) = listener.accept().await?;
         tracing::info!("connect: {:?}", addr);
 
-        let proxy = proxy.clone();
+        let proxy = proxy.resubscribe();
         tokio::spawn(async move {
             let (stream, sink) = socket.into_split();
             tokio::select! {
@@ -34,12 +34,14 @@ pub async fn run(port: Option<u16>) -> anyhow::Result<()> {
     }
 }
 
-async fn tx(mut sink: OwnedWriteHalf, mut proxy: watch::Receiver<String>) -> anyhow::Result<()> {
-    while proxy.changed().await.is_ok() {
-        let buf = proxy.borrow().clone();
+async fn tx(
+    mut sink: OwnedWriteHalf,
+    mut proxy: broadcast::Receiver<String>,
+) -> anyhow::Result<()> {
+    loop {
+        let buf = proxy.recv().await?;
         sink.write_all(buf.as_bytes()).await?;
     }
-    Ok(())
 }
 
 async fn rx(mut stream: OwnedReadHalf) -> anyhow::Result<()> {
