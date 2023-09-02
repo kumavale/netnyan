@@ -1,4 +1,4 @@
-use std::io::{stdout, Read, Write};
+use std::io::{Read, Write};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::tcp::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::sync::broadcast;
@@ -36,10 +36,7 @@ pub async fn rx(mut stream: OwnedReadHalf) -> anyhow::Result<()> {
         let mut buf = vec![];
         match stream.read_buf(&mut buf).await {
             Ok(0) => return Ok(()),
-            Ok(_) => {
-                print!("{}", String::from_utf8_lossy(&buf));
-                stdout().flush()?;
-            }
+            Ok(_) => std::io::stdout().lock().write_all(&buf)?,
             Err(e) => anyhow::bail!(e),
         }
     }
