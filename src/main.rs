@@ -1,6 +1,9 @@
-use clap::{CommandFactory, Parser};
+mod client;
+mod logger;
+mod net;
+mod server;
 
-use netnyan::{client, logger, server};
+use clap::{CommandFactory, Parser};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
