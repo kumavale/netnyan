@@ -40,7 +40,11 @@ nn localhost 22222
 HTTP request:
 
 ```
-echo -e "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" | nn example.com 80 | grep 200
+echo -n "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" | nn example.com 80 | grep OK
 ```
 
 [](https://support.giphy.com/hc/en-us/articles/360020027752-GIPHY-User-Terms-of-Service)
+
+## Contributing
+
+This project welcomes your PR and issues. For example, refactoring, adding features, correcting English, etc.
