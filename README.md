@@ -5,7 +5,7 @@
 [![license](https://img.shields.io/badge/License-MIT-blue.svg?style=flat)](LICENSE-MIT)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](LICENSE-APACHE)
 
-**netnyan** is a replacement for `netcat` written in Rust.  
+**netnyan** is a command written in Rust like netcat.  
 netcat (often abbreviated to nc) is a computer networking utility for reading from and writing to network connections using TCP or UDP.
 
 <img src="https://media.giphy.com/media/4QZK21zlzVIyc/giphy.gif" align="right" />
@@ -14,6 +14,11 @@ netcat (often abbreviated to nc) is a computer networking utility for reading fr
 
 - Outbound or inbound connections, TCP ~or UDP~, to or from any ports
 - I/O with pipes
+
+## Non-goals
+
+- Complete replacement for netcat
+- Support for protocols above TCP
 
 ## Install
 
@@ -47,4 +52,4 @@ echo -n "GET / HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n" | nn 
 
 ## Contributing
 
-This project welcomes your PR and issues. For example, refactoring, adding features, correcting English, etc.
+This project welcomes your PR and issues. For example, fixing bugs, adding features, refactoring, etc.
