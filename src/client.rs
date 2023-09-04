@@ -2,13 +2,16 @@ use anyhow::Context;
 use tokio::net::TcpStream;
 use tokio::sync::{broadcast, oneshot};
 
-pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
+pub async fn run(destination: String, port: Option<u16>, zero: bool) -> anyhow::Result<()> {
     let port = port.context("missing port number")?;
     let stream = TcpStream::connect(format!("{destination}:{port}")).await?;
     let (stream, sink) = stream.into_split();
     let (sender, proxy) = broadcast::channel(1);
 
-    if atty::is(atty::Stream::Stdin) {
+    if zero {
+        tracing::info!("Connection to {destination} {port} port succeeded!");
+        Ok(())
+    } else if atty::is(atty::Stream::Stdin) {
         use crate::net;
         tracing::debug!("from stdin");
         tokio::spawn(net::stdin(sender));
