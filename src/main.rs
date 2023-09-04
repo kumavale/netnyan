@@ -14,6 +14,9 @@ struct Args {
     #[arg(short = 'p', long = "port")]
     listen_port: Option<u16>,
 
+    #[arg(short, long, default_value_t = false)]
+    zero: bool,
+
     destination: Option<String>,
     port: Option<u16>,
 }
@@ -25,6 +28,9 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     if args.listen {
+        if args.zero {
+            anyhow::bail!("cannot use -z and -l");
+        }
         tokio::select! {
             _ = tokio::signal::ctrl_c() => {
                 tracing::debug!("received Ctrl+C");
@@ -41,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
                 tracing::debug!("received Ctrl+C");
                 std::process::exit(128 + 2);
             },
-            r = client::run(destination, args.port) => r?,
+            r = client::run(destination, args.port, args.zero) => r?,
         }
         return Ok(());
     }
