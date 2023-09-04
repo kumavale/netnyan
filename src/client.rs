@@ -1,4 +1,5 @@
 use anyhow::Context;
+use std::io::IsTerminal;
 use tokio::net::TcpStream;
 use tokio::sync::{broadcast, oneshot};
 
@@ -8,7 +9,7 @@ pub async fn run(destination: String, port: Option<u16>) -> anyhow::Result<()> {
     let (stream, sink) = stream.into_split();
     let (sender, proxy) = broadcast::channel(1);
 
-    if atty::is(atty::Stream::Stdin) {
+    if std::io::stdin().is_terminal() {
         use crate::net;
         tracing::debug!("from stdin");
         tokio::spawn(net::stdin(sender));
