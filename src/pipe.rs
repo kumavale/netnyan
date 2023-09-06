@@ -13,7 +13,8 @@ pub struct ExitSignal;
 pub fn stdin(sender: broadcast::Sender<Vec<u8>>) -> JoinHandle<anyhow::Result<()>> {
     tokio::task::spawn_blocking(move || loop {
         let mut buf = vec![];
-        match std::io::stdin().lock().read_to_end(&mut buf)? {
+        let mut chunk = std::io::stdin().lock().take(65535);
+        match chunk.read_to_end(&mut buf)? {
             0 => return Ok(()),
             _ => sender.send(buf)?,
         };

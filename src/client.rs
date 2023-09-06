@@ -7,7 +7,7 @@ pub async fn run(destination: String, port: Option<u16>, zero: bool) -> anyhow::
     let port = port.context("missing port number")?;
     let stream = TcpStream::connect(format!("{destination}:{port}")).await?;
     let (stream, sink) = stream.into_split();
-    let (sender, proxy) = broadcast::channel(1);
+    let (sender, proxy) = broadcast::channel(16384);
 
     if zero {
         tracing::info!("Connection to {destination} {port} port succeeded!");
