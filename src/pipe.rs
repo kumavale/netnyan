@@ -29,7 +29,7 @@ pub async fn tx(
     loop {
         let buf = match proxy.recv().await {
             Ok(buf) => buf,
-            Err(e) if e == RecvError::Closed => break,
+            Err(RecvError::Closed) => break,
             Err(e) => return Err(anyhow!(e)),
         };
         sink.write_all(&buf).await?;
